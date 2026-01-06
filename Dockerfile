@@ -24,7 +24,7 @@ WORKDIR /workspace/LTX-2
 RUN uv sync --frozen
 
 # Runpod SDK追加
-RUN /workspace/LTX-2/.venv/bin/pip install runpod
+RUN . /workspace/LTX-2/.venv/bin/activate && pip install runpod
 
 # ハンドラーコピー
 COPY handler.py /workspace/handler.py
