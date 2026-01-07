@@ -9,6 +9,10 @@ import time
 import requests
 import gradio as gr
 from datetime import datetime
+from dotenv import load_dotenv
+
+# Load .env file
+load_dotenv()
 
 # Config
 RUNPOD_API_KEY = os.environ.get("RUNPOD_API_KEY", "")
