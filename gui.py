@@ -36,8 +36,8 @@ def check_health():
         return f"Error: {e}"
 
 
-def submit_job(prompt, duration, width, height, steps, seed):
-    """Submit generation job"""
+def submit_job(prompt, duration, width, height, steps, seed, image_base64=None, image_strength=1.0):
+    """Submit generation job (T2V or I2V)"""
     payload = {
         "input": {
             "prompt": prompt,
@@ -50,6 +50,11 @@ def submit_job(prompt, duration, width, height, steps, seed):
 
     if seed and seed > 0:
         payload["input"]["seed"] = seed
+
+    # I2V: 画像パラメータ
+    if image_base64:
+        payload["input"]["image_base64"] = image_base64
+        payload["input"]["image_strength"] = image_strength
 
     response = requests.post(
         f"{RUNPOD_ENDPOINT}/run",
@@ -76,11 +81,20 @@ def get_status(job_id):
     return response.json()
 
 
-def generate_video(prompt, duration, width, height, steps, seed, progress=gr.Progress()):
-    """Main generation function"""
+def generate_video(prompt, duration, width, height, steps, seed, input_image, image_strength, progress=gr.Progress()):
+    """Main generation function (T2V or I2V)"""
 
     if not prompt.strip():
         return None, "Error: Prompt is required", None
+
+    # I2V: 画像をBase64エンコード
+    image_base64 = None
+    if input_image is not None:
+        import base64
+        with open(input_image, "rb") as f:
+            image_base64 = base64.b64encode(f.read()).decode("utf-8")
+
+    mode = "I2V" if image_base64 else "T2V"
 
     # Validate resolution
     if width % 64 != 0 or height % 64 != 0:
@@ -88,8 +102,8 @@ def generate_video(prompt, duration, width, height, steps, seed, progress=gr.Pro
 
     try:
         # Submit job
-        progress(0.1, desc="Submitting job...")
-        job_id = submit_job(prompt, duration, width, height, steps, seed if seed else None)
+        progress(0.1, desc=f"Submitting {mode} job...")
+        job_id = submit_job(prompt, duration, width, height, steps, seed if seed else None, image_base64, image_strength)
 
         # Poll for completion
         start_time = time.time()
@@ -124,8 +138,9 @@ def generate_video(prompt, duration, width, height, steps, seed, progress=gr.Pro
                 exec_time = status.get("executionTime", 0) / 1000
                 cost = exec_time * 0.00106
 
-                info = f"""Generation complete!
+                info = f"""Generation complete! ({mode})
 
+Mode: {mode}
 Duration: {output.get('duration')}s
 Resolution: {output.get('resolution')}
 Frames: {output.get('frames')}
@@ -175,7 +190,7 @@ def update_resolution(preset):
 # Build UI
 with gr.Blocks(title="LTX-2 Video Generator", theme=gr.themes.Soft()) as app:
     gr.Markdown("# LTX-2 Video Generator")
-    gr.Markdown("Generate AI videos using LTX-2 on Runpod Serverless")
+    gr.Markdown("Generate AI videos using LTX-2 on Runpod Serverless (T2V & I2V supported)")
 
     with gr.Row():
         with gr.Column(scale=2):
@@ -197,10 +212,23 @@ with gr.Blocks(title="LTX-2 Video Generator", theme=gr.themes.Soft()) as app:
                 height = gr.Number(value=1024, label="Height", precision=0)
 
             with gr.Row():
-                duration = gr.Slider(1, 15, value=10, step=1, label="Duration (seconds)")
+                duration = gr.Slider(1, 15, value=15, step=1, label="Duration (seconds)")
                 steps = gr.Slider(8, 30, value=20, step=1, label="Steps")
 
             seed = gr.Number(value=0, label="Seed (0 = random)", precision=0)
+
+            # I2V: Image-to-Video section
+            with gr.Accordion("🖼️ Image-to-Video (I2V)", open=False):
+                gr.Markdown("Upload an image to animate it. Leave empty for Text-to-Video (T2V).")
+                input_image = gr.Image(
+                    label="Input Image (optional)",
+                    type="filepath",
+                    height=200,
+                )
+                image_strength = gr.Slider(
+                    0.1, 1.0, value=1.0, step=0.1,
+                    label="Image Strength (1.0 = strong conditioning)"
+                )
 
             with gr.Row():
                 generate_btn = gr.Button("Generate Video", variant="primary", size="lg")
@@ -214,9 +242,9 @@ with gr.Blocks(title="LTX-2 Video Generator", theme=gr.themes.Soft()) as app:
     # Examples
     gr.Examples(
         examples=[
-            ["Close-up of an orange tabby cat sitting on a modern kitchen counter in warm morning sunlight. The cat stares directly into camera with an intense judgmental expression and speaks in a deadpan British accent, 'I know what you did last night.' The cat slowly blinks with smug satisfaction. Shallow depth of field, cinematic lighting, comedic tone.", 10, 576, 1024, 20, 0],
-            ["A golden retriever puppy playing with a red ball in a sunny backyard. The puppy runs excitedly, tail wagging. Natural lighting, handheld camera feel, joyful atmosphere.", 10, 576, 1024, 20, 0],
-            ["Old monochrome documentary film footage from the 1920s with heavy film grain and flickering. A young man in vintage clothing sits at a wooden desk, writing with a fountain pen. Authentic vintage film aesthetic, sepia tones.", 10, 1280, 768, 20, 0],
+            ["Close-up of an orange tabby cat sitting on a modern kitchen counter in warm morning sunlight. The cat stares directly into camera with an intense judgmental expression and speaks in a deadpan British accent, 'I know what you did last night.' The cat slowly blinks with smug satisfaction. Shallow depth of field, cinematic lighting, comedic tone.", 15, 576, 1024, 20, 0],
+            ["A golden retriever puppy playing with a red ball in a sunny backyard. The puppy runs excitedly, tail wagging. Natural lighting, handheld camera feel, joyful atmosphere.", 15, 576, 1024, 20, 0],
+            ["Old monochrome documentary film footage from the 1920s with heavy film grain and flickering. A young man in vintage clothing sits at a wooden desk, writing with a fountain pen. Authentic vintage film aesthetic, sepia tones.", 15, 1280, 768, 20, 0],
         ],
         inputs=[prompt, duration, width, height, steps, seed],
     )
@@ -242,6 +270,12 @@ speaking in enthusiastic English, "This is amazing!"
 - Specific location names (Tokyo, NYC)
 - Negative prompts
 - Complex physics (jumping, juggling)
+
+### Image-to-Video (I2V) Tips:
+- Describe the **motion/action** you want, not the image content
+- The model already sees the image, so focus on what should happen
+- Good: "The cat slowly turns its head and blinks"
+- Bad: "A cat sitting on a table" (redundant with image)
         """)
 
     # Event handlers
@@ -253,7 +287,7 @@ speaking in enthusiastic English, "This is amazing!"
 
     generate_btn.click(
         fn=generate_video,
-        inputs=[prompt, duration, width, height, steps, seed],
+        inputs=[prompt, duration, width, height, steps, seed, input_image, image_strength],
         outputs=[video_output, info_output, download_output],
     )
 

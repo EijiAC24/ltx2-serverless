@@ -26,9 +26,11 @@ def submit_job(
     height: int = DEFAULT_HEIGHT,
     steps: int = DEFAULT_STEPS,
     seed: Optional[int] = None,
+    image_base64: Optional[str] = None,
+    image_strength: float = 1.0,
 ) -> str:
     """
-    Submit a video generation job
+    Submit a video generation job (T2V or I2V)
 
     Args:
         prompt: Generation prompt
@@ -37,6 +39,8 @@ def submit_job(
         height: Video height (must be divisible by 64)
         steps: Inference steps (20 recommended)
         seed: Random seed for reproducibility
+        image_base64: Base64 encoded image for I2V (optional, None for T2V)
+        image_strength: Image conditioning strength 0.0-1.0 (default 1.0)
 
     Returns:
         Job ID
@@ -60,6 +64,11 @@ def submit_job(
 
     if seed is not None:
         payload["input"]["seed"] = seed
+
+    # I2V: 画像入力
+    if image_base64:
+        payload["input"]["image_base64"] = image_base64
+        payload["input"]["image_strength"] = image_strength
 
     response = requests.post(
         f"{RUNPOD_ENDPOINT}/run",
@@ -124,15 +133,18 @@ def generate_video(
     height: int = DEFAULT_HEIGHT,
     steps: int = DEFAULT_STEPS,
     seed: Optional[int] = None,
+    image_base64: Optional[str] = None,
+    image_strength: float = 1.0,
 ) -> Tuple[bytes, Dict]:
     """
-    Generate video and return bytes
+    Generate video and return bytes (T2V or I2V)
 
     Returns:
         Tuple of (video_bytes, metadata)
     """
-    job_id = submit_job(prompt, duration, width, height, steps, seed)
-    print(f"Submitted job: {job_id}")
+    job_id = submit_job(prompt, duration, width, height, steps, seed, image_base64, image_strength)
+    mode = "I2V" if image_base64 else "T2V"
+    print(f"[{mode}] Submitted job: {job_id}")
 
     result = wait_for_completion(job_id)
     output = result.get("output", {})
@@ -164,14 +176,65 @@ def generate_video_async(
     height: int = DEFAULT_HEIGHT,
     steps: int = DEFAULT_STEPS,
     seed: Optional[int] = None,
+    image_base64: Optional[str] = None,
+    image_strength: float = 1.0,
 ) -> str:
     """
-    Submit job without waiting
+    Submit job without waiting (T2V or I2V)
 
     Returns:
         Job ID
     """
-    return submit_job(prompt, duration, width, height, steps, seed)
+    return submit_job(prompt, duration, width, height, steps, seed, image_base64, image_strength)
+
+
+def image_to_base64(image_path: str) -> str:
+    """
+    画像ファイルをBase64エンコード
+
+    Args:
+        image_path: 画像ファイルのパス
+
+    Returns:
+        Base64エンコードされた文字列
+    """
+    import base64
+    with open(image_path, "rb") as f:
+        return base64.b64encode(f.read()).decode("utf-8")
+
+
+def generate_video_from_image(
+    image_path: str,
+    prompt: str,
+    duration: float = DEFAULT_DURATION,
+    width: int = DEFAULT_WIDTH,
+    height: int = DEFAULT_HEIGHT,
+    steps: int = DEFAULT_STEPS,
+    seed: Optional[int] = None,
+    image_strength: float = 1.0,
+) -> Tuple[bytes, Dict]:
+    """
+    画像から動画を生成 (I2V convenience function)
+
+    Args:
+        image_path: 入力画像のパス
+        prompt: 動きの説明プロンプト
+        その他: generate_videoと同じ
+
+    Returns:
+        Tuple of (video_bytes, metadata)
+    """
+    image_b64 = image_to_base64(image_path)
+    return generate_video(
+        prompt=prompt,
+        duration=duration,
+        width=width,
+        height=height,
+        steps=steps,
+        seed=seed,
+        image_base64=image_b64,
+        image_strength=image_strength,
+    )
 
 
 def check_health() -> bool:

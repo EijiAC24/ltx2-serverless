@@ -15,6 +15,7 @@ from dotenv import load_dotenv
 load_dotenv()
 
 from accounts import get_account, list_accounts, DEFAULT_ACCOUNT
+from config import DEFAULT_DURATION, DEFAULT_WIDTH, DEFAULT_HEIGHT, DEFAULT_STEPS
 
 # Output folder for generated videos
 OUTPUT_DIR = Path(__file__).parent / "output"
@@ -103,10 +104,10 @@ def run_single(account_id: str = None, skip_post: bool = False):
         # Submit job
         job_id = ltx_client.submit_job(
             prompt=prompt_data["prompt"],
-            duration=10,
-            width=576,
-            height=1024,
-            steps=20,
+            duration=DEFAULT_DURATION,
+            width=DEFAULT_WIDTH,
+            height=DEFAULT_HEIGHT,
+            steps=DEFAULT_STEPS,
         )
         print(f"  Job ID: {job_id}")
 

@@ -14,6 +14,7 @@ from dotenv import load_dotenv
 load_dotenv()
 
 from accounts import get_account, list_accounts, DEFAULT_ACCOUNT
+from config import DEFAULT_DURATION, DEFAULT_WIDTH, DEFAULT_HEIGHT, DEFAULT_STEPS
 import grok_client
 import sheets_client
 import ltx_client
@@ -100,10 +101,10 @@ def batch_generate(account_id: str = None, count: int = 5):
     try:
         job_id = ltx_client.submit_job(
             prompt=first["prompt_data"]["prompt"],
-            duration=10,
-            width=576,
-            height=1024,
-            steps=20,
+            duration=DEFAULT_DURATION,
+            width=DEFAULT_WIDTH,
+            height=DEFAULT_HEIGHT,
+            steps=DEFAULT_STEPS,
         )
         sheets_client.mark_generating(first["row_id"], job_id)
         print(f"  [Warm-up] Job {job_id[:20]}... submitted")
@@ -151,10 +152,10 @@ def batch_generate(account_id: str = None, count: int = 5):
             try:
                 job_id = ltx_client.submit_job(
                     prompt=data["prompt_data"]["prompt"],
-                    duration=10,
-                    width=576,
-                    height=1024,
-                    steps=20,
+                    duration=DEFAULT_DURATION,
+                    width=DEFAULT_WIDTH,
+                    height=DEFAULT_HEIGHT,
+                    steps=DEFAULT_STEPS,
                 )
                 sheets_client.mark_generating(data["row_id"], job_id)
                 jobs.append({

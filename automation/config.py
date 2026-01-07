@@ -31,7 +31,7 @@ FTP_PATH = os.environ.get("FTP_PATH", "/buzz/anachronism")
 FTP_BASE_URL = os.environ.get("FTP_BASE_URL", "http://okibai.heavy.jp")
 
 # Video generation defaults
-DEFAULT_DURATION = 10
+DEFAULT_DURATION = 15  # seconds (TikTok optimal: 15s)
 DEFAULT_WIDTH = 576
 DEFAULT_HEIGHT = 1024
 DEFAULT_STEPS = 20
