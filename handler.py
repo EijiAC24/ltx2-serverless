@@ -11,7 +11,7 @@ import uuid
 import runpod
 
 # パス設定（Network Volume）
-VOLUME_PATH = "/runpod-volume"
+VOLUME_PATH = "/workspace"
 MODEL_DIR = f"{VOLUME_PATH}/models"
 GEMMA_PATH = f"{MODEL_DIR}/gemma"
 OUTPUT_DIR = "/tmp/outputs"
