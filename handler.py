@@ -5,13 +5,20 @@ Supports: Text-to-Video (T2V) and Image-to-Video (I2V)
 """
 
 import os
+import sys
 import subprocess
 import base64
 import uuid
+import random
 import runpod
 
+# Force unbuffered output for logging
+sys.stdout = sys.stdout if hasattr(sys.stdout, 'flush') else open(1, 'w', buffering=1)
+print("[HANDLER] LTX-2 Handler loaded with I2V support", flush=True)
+
 # パス設定（Network Volume）
-VOLUME_PATH = "/workspace"
+# Pod: /workspace, Serverless: /runpod-volume (same volume, different mount)
+VOLUME_PATH = "/runpod-volume"
 MODEL_DIR = f"{VOLUME_PATH}/models"
 GEMMA_PATH = f"{MODEL_DIR}/gemma"
 OUTPUT_DIR = "/tmp/outputs"
@@ -61,15 +68,18 @@ def run_generation(
     if negative_prompt:
         cmd.extend(["--negative-prompt", negative_prompt])
 
-    if seed is not None:
-        cmd.extend(["--seed", str(seed)])
+    # Always use a seed (random if not provided)
+    if seed is None:
+        seed = random.randint(0, 2147483647)
+    cmd.extend(["--seed", str(seed)])
+    print(f"[SEED] Using seed: {seed}", flush=True)
 
     # I2V: 画像入力がある場合
     if image_path:
         cmd.extend(["--image", image_path, "0", str(image_strength)])
-        print(f"[I2V] Image path: {image_path}, strength: {image_strength}")
+        print(f"[I2V] Image path: {image_path}, strength: {image_strength}", flush=True)
 
-    print(f"[CMD] {' '.join(cmd)}")
+    print(f"[CMD] {' '.join(cmd)}", flush=True)
 
     # 環境変数にPYTHONPATHを追加
     env = os.environ.copy()

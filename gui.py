@@ -96,9 +96,12 @@ def generate_video(prompt, duration, width, height, steps, seed, input_image, im
     if input_image is not None:
         import base64
         with open(input_image, "rb") as f:
-            image_base64 = base64.b64encode(f.read()).decode("utf-8")
+            image_bytes = f.read()
+            image_base64 = base64.b64encode(image_bytes).decode("utf-8")
+        print(f"[GUI] Image loaded: {len(image_bytes)} bytes, base64: {len(image_base64)} chars")
 
     mode = "I2V" if image_base64 else "T2V"
+    print(f"[GUI] Mode: {mode}, Image strength: {image_strength}")
 
     # Validate resolution
     if width % 64 != 0 or height % 64 != 0:
