@@ -67,8 +67,9 @@ def run_generation(
     # I2V: 画像入力がある場合
     if image_path:
         cmd.extend(["--image", image_path, "0", str(image_strength)])
+        print(f"[I2V] Image path: {image_path}, strength: {image_strength}")
 
-    print(f"Running: {' '.join(cmd)}")
+    print(f"[CMD] {' '.join(cmd)}")
 
     # 環境変数にPYTHONPATHを追加
     env = os.environ.copy()
@@ -84,7 +85,11 @@ def run_generation(
     )
 
     if result.returncode != 0:
-        raise Exception(f"Generation failed: {result.stderr}")
+        # 詳細なエラー情報を出力
+        error_msg = f"Generation failed (exit code {result.returncode})\n"
+        error_msg += f"STDOUT: {result.stdout[-2000:] if result.stdout else 'None'}\n"
+        error_msg += f"STDERR: {result.stderr[-2000:] if result.stderr else 'None'}"
+        raise Exception(error_msg)
 
     return output_path
 
