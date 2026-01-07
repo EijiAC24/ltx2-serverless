@@ -1,6 +1,6 @@
 """
 LTX-2 Serverless Handler for Runpod
-Network Volume版 - A6000 (48GB)
+RTX 6000 Ada (48GB) - fp8 + LoRA
 """
 
 import os
@@ -14,7 +14,7 @@ VOLUME_PATH = "/runpod-volume"
 MODEL_DIR = f"{VOLUME_PATH}/models"
 GEMMA_PATH = f"{MODEL_DIR}/gemma"
 OUTPUT_DIR = "/tmp/outputs"
-LTX2_PATH = "/workspace/LTX-2"
+LTX2_PATH = f"{VOLUME_PATH}/LTX-2"
 VENV_PYTHON = f"{LTX2_PATH}/.venv/bin/python"
 
 
@@ -80,7 +80,7 @@ def handler(job):
     negative_prompt = job_input.get("negative_prompt", "")
     duration = job_input.get("duration", 3)
     width = job_input.get("width", 1280)
-    height = job_input.get("height", 720)
+    height = job_input.get("height", 768)
     fps = job_input.get("fps", 24)
     seed = job_input.get("seed")
     steps = job_input.get("steps", 8)
