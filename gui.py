@@ -11,7 +11,7 @@ import gradio as gr
 from datetime import datetime
 
 # Config
-RUNPOD_API_KEY = os.environ.get("RUNPOD_API_KEY", "rpa_84WECTXDR2XRAU0LJ9AW4BFAYW1YD5Q78IEW4G55prtwom")
+RUNPOD_API_KEY = os.environ.get("RUNPOD_API_KEY", "")
 RUNPOD_ENDPOINT_ID = os.environ.get("RUNPOD_ENDPOINT_ID", "j01yykel5de361")
 RUNPOD_ENDPOINT = f"https://api.runpod.ai/v2/{RUNPOD_ENDPOINT_ID}"
 
