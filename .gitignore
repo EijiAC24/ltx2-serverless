@@ -1,0 +1,39 @@
+# Python
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+.Python
+.venv/
+venv/
+ENV/
+
+# Videos (generated)
+videos/*.mp4
+*.mp4
+
+# Secrets (never commit)
+*.json
+credentials.json
+service-account.json
+.env
+.env.*
+
+# IDE
+.vscode/
+.idea/
+*.swp
+*.swo
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Temp
+*.log
+*.tmp
+/tmp/
+
+# Keep automation requirements
+!automation/requirements.txt
+!requirements-gui.txt
