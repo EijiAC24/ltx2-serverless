@@ -1,13 +1,9 @@
-name: LTX-2 Daily Automation
+name: Batch Generate Videos
 
 on:
   # schedule:
-  #   # 5 times per day (JST: 9:00, 12:00, 15:00, 18:00, 21:00)
-  #   - cron: '0 0 * * *'   # 09:00 JST
-  #   - cron: '0 3 * * *'   # 12:00 JST
-  #   - cron: '0 6 * * *'   # 15:00 JST
-  #   - cron: '0 9 * * *'   # 18:00 JST
-  #   - cron: '0 12 * * *'  # 21:00 JST
+  #   # Once per day at 00:00 UTC (09:00 JST)
+  #   - cron: '0 0 * * *'
 
   workflow_dispatch:
     inputs:
@@ -18,39 +14,36 @@ on:
         type: choice
         options:
           - anachronism
-          # Add more accounts here as needed
-      skip_post:
-        description: 'Skip posting to Later'
-        required: false
-        default: false
-        type: boolean
       count:
         description: 'Number of videos to generate'
         required: false
-        default: '1'
+        default: '5'
         type: string
 
 env:
-  # API Keys from secrets
+  # API Keys
   GROK_API_KEY: ${{ secrets.GROK_API_KEY }}
   RUNPOD_API_KEY: ${{ secrets.RUNPOD_API_KEY }}
-  LATER_API_KEY: ${{ secrets.LATER_API_KEY }}
 
   # Google Sheets
   GOOGLE_CREDENTIALS_JSON: ${{ secrets.GOOGLE_CREDENTIALS_JSON }}
   SPREADSHEET_ID: ${{ secrets.SPREADSHEET_ID }}
   SHEET_NAME: ${{ vars.SHEET_NAME || 'prompts' }}
 
-  # Later (per-account profiles can be set as LATER_PROFILE_ID_<ACCOUNT>)
-  LATER_PROFILE_ID: ${{ secrets.LATER_PROFILE_ID }}
-
   # Runpod
   RUNPOD_ENDPOINT_ID: ${{ vars.RUNPOD_ENDPOINT_ID || 'j01yykel5de361' }}
 
+  # FTP (Lolipop)
+  FTP_SERVER: ${{ secrets.FTP_SERVER }}
+  FTP_USER: ${{ secrets.FTP_USER }}
+  FTP_PASSWORD: ${{ secrets.FTP_PASSWORD }}
+  FTP_PATH: ${{ vars.FTP_PATH || '/buzz/anachronism' }}
+  FTP_BASE_URL: ${{ vars.FTP_BASE_URL || 'http://okibai.heavy.jp' }}
+
 jobs:
-  generate-and-post:
+  generate:
     runs-on: ubuntu-latest
-    timeout-minutes: 30
+    timeout-minutes: 60  # 5 videos can take a while
 
     steps:
       - name: Checkout repository
@@ -66,33 +59,20 @@ jobs:
       - name: Install dependencies
         run: pip install -r automation/requirements.txt
 
-      - name: Run single generation
+      - name: Run batch generation
         working-directory: automation
         run: |
           ACCOUNT="${{ github.event.inputs.account || 'anachronism' }}"
-          SKIP_POST="${{ github.event.inputs.skip_post || 'false' }}"
-          COUNT="${{ github.event.inputs.count || '1' }}"
+          COUNT="${{ github.event.inputs.count || '5' }}"
 
-          # Run specified number of times
-          for i in $(seq 1 $COUNT); do
-            echo "=== Run $i of $COUNT ==="
-            if [ "$SKIP_POST" = "true" ]; then
-              python single_run.py --account "$ACCOUNT" --skip-post
-            else
-              python single_run.py --account "$ACCOUNT"
-            fi
-
-            # Small delay between runs if multiple
-            if [ "$COUNT" -gt 1 ] && [ "$i" -lt "$COUNT" ]; then
-              sleep 10
-            fi
-          done
+          python batch_generate.py --account "$ACCOUNT" --count "$COUNT"
 
       - name: Summary
         if: always()
         run: |
-          echo "## Generation Run Complete" >> $GITHUB_STEP_SUMMARY
+          echo "## Batch Generation Complete" >> $GITHUB_STEP_SUMMARY
           echo "" >> $GITHUB_STEP_SUMMARY
           echo "- **Trigger**: ${{ github.event_name }}" >> $GITHUB_STEP_SUMMARY
           echo "- **Account**: ${{ github.event.inputs.account || 'anachronism' }}" >> $GITHUB_STEP_SUMMARY
+          echo "- **Count**: ${{ github.event.inputs.count || '5' }}" >> $GITHUB_STEP_SUMMARY
           echo "- **Time**: $(date -u)" >> $GITHUB_STEP_SUMMARY

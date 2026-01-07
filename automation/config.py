@@ -23,6 +23,13 @@ RUNPOD_ENDPOINT = f"https://api.runpod.ai/v2/{RUNPOD_ENDPOINT_ID}"
 LATER_API_KEY = os.environ.get("LATER_API_KEY", "")
 LATER_PROFILE_ID = os.environ.get("LATER_PROFILE_ID", "")
 
+# FTP (Lolipop)
+FTP_SERVER = os.environ.get("FTP_SERVER", "ftp.lolipop.jp")
+FTP_USER = os.environ.get("FTP_USER", "")
+FTP_PASSWORD = os.environ.get("FTP_PASSWORD", "")
+FTP_PATH = os.environ.get("FTP_PATH", "/buzz/anachronism")
+FTP_BASE_URL = os.environ.get("FTP_BASE_URL", "http://okibai.heavy.jp")
+
 # Video generation defaults
 DEFAULT_DURATION = 10
 DEFAULT_WIDTH = 576

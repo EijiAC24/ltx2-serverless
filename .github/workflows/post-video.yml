@@ -1,0 +1,95 @@
+name: Post Video to Later
+
+on:
+  # schedule:
+  #   # 5 times per day (JST: 9:00, 12:00, 15:00, 18:00, 21:00)
+  #   - cron: '0 0 * * *'   # 09:00 JST
+  #   - cron: '0 3 * * *'   # 12:00 JST
+  #   - cron: '0 6 * * *'   # 15:00 JST
+  #   - cron: '0 9 * * *'   # 18:00 JST
+  #   - cron: '0 12 * * *'  # 21:00 JST
+
+  workflow_dispatch:
+    inputs:
+      mode:
+        description: 'Post mode'
+        required: false
+        default: 'next'
+        type: choice
+        options:
+          - next    # Post next pending video
+          - all     # Post all pending videos
+      row_id:
+        description: 'Specific row ID to post (optional)'
+        required: false
+        type: string
+      dry_run:
+        description: 'Dry run (show what would be posted)'
+        required: false
+        default: false
+        type: boolean
+
+env:
+  # Google Sheets
+  GOOGLE_CREDENTIALS_JSON: ${{ secrets.GOOGLE_CREDENTIALS_JSON }}
+  SPREADSHEET_ID: ${{ secrets.SPREADSHEET_ID }}
+  SHEET_NAME: ${{ vars.SHEET_NAME || 'prompts' }}
+
+  # FTP (Lolipop)
+  FTP_SERVER: ${{ secrets.FTP_SERVER }}
+  FTP_USER: ${{ secrets.FTP_USER }}
+  FTP_PASSWORD: ${{ secrets.FTP_PASSWORD }}
+  FTP_PATH: ${{ vars.FTP_PATH || '/buzz/anachronism' }}
+  FTP_BASE_URL: ${{ vars.FTP_BASE_URL || 'http://okibai.heavy.jp' }}
+
+  # Later API
+  LATER_API_KEY: ${{ secrets.LATER_API_KEY }}
+  LATER_PROFILE_ID: ${{ secrets.LATER_PROFILE_ID }}
+
+jobs:
+  post:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+          cache: 'pip'
+          cache-dependency-path: automation/requirements.txt
+
+      - name: Install dependencies
+        run: pip install -r automation/requirements.txt
+
+      - name: Post video
+        working-directory: automation
+        run: |
+          MODE="${{ github.event.inputs.mode || 'next' }}"
+          ROW_ID="${{ github.event.inputs.row_id || '' }}"
+          DRY_RUN="${{ github.event.inputs.dry_run || 'false' }}"
+
+          ARGS=""
+          if [ "$DRY_RUN" = "true" ]; then
+            ARGS="$ARGS --dry-run"
+          fi
+
+          if [ -n "$ROW_ID" ]; then
+            python post_video.py --row "$ROW_ID" $ARGS
+          elif [ "$MODE" = "all" ]; then
+            python post_video.py --all $ARGS
+          else
+            python post_video.py --next $ARGS
+          fi
+
+      - name: Summary
+        if: always()
+        run: |
+          echo "## Post Video Complete" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "- **Trigger**: ${{ github.event_name }}" >> $GITHUB_STEP_SUMMARY
+          echo "- **Mode**: ${{ github.event.inputs.mode || 'next' }}" >> $GITHUB_STEP_SUMMARY
+          echo "- **Time**: $(date -u)" >> $GITHUB_STEP_SUMMARY
