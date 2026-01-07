@@ -17,6 +17,9 @@ OUTPUT_DIR = "/tmp/outputs"
 LTX2_PATH = f"{VOLUME_PATH}/LTX-2"
 VENV_PYTHON = f"{LTX2_PATH}/.venv/bin/python"
 
+# LTX-2 パッケージパスを環境変数に追加
+os.environ["PYTHONPATH"] = f"{LTX2_PATH}/packages/ltx-pipelines/src:{LTX2_PATH}/packages/ltx-core/src:" + os.environ.get("PYTHONPATH", "")
+
 
 def run_generation(
     prompt: str,
@@ -53,12 +56,17 @@ def run_generation(
 
     print(f"Running: {' '.join(cmd)}")
 
+    # 環境変数にPYTHONPATHを追加
+    env = os.environ.copy()
+    env["PYTHONPATH"] = f"{LTX2_PATH}/packages/ltx-pipelines/src:{LTX2_PATH}/packages/ltx-core/src:" + env.get("PYTHONPATH", "")
+
     result = subprocess.run(
         cmd,
         cwd=LTX2_PATH,
         capture_output=True,
         text=True,
         timeout=600,
+        env=env,
     )
 
     if result.returncode != 0:
