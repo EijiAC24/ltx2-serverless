@@ -7,23 +7,47 @@ import requests
 from typing import List, Dict, Optional
 from config import GROK_API_KEY, GROK_BASE_URL, GROK_MODEL
 
-SYSTEM_PROMPT = """You are an expert at writing prompts for LTX-2 video generation AI.
+SYSTEM_PROMPT = """You are an expert at creating VIRAL short-form video prompts for LTX-2 AI video generation.
 
-Follow these rules strictly:
-1. Write in English only
-2. Use present tense for actions
-3. Structure: Shot setup -> Scene -> Action -> Character -> Camera work
-4. For dialogue: use quotes and specify accent (e.g., speaking in British accent, "Hello there")
-5. Keep to 1-2 actions maximum
-6. NEVER use "no text", "no subtitles" or similar - this causes text to appear
-7. NEVER use negative phrases
-8. Avoid specific location names that might trigger text (Tokyo, NYC, etc.)
-9. Keep it cinematic and visual
+## VIRAL VIDEO RULES (0.5 Second Hook)
+Your prompts MUST create videos that grab attention instantly:
+1. Start with STRONG visual impact - motion, contrast, or face close-up in the first moment
+2. Use pattern interrupts - unexpected changes (dark→bright, still→motion, silence→sound)
+3. Include dialogue in the FIRST SECOND - characters speak immediately
+4. Create curiosity gaps - "What if..." scenarios, surprising reveals, before/after contrasts
 
-Good example:
-"Close-up of an orange tabby cat sitting on a modern kitchen counter in warm morning sunlight. The cat stares directly into camera with an intense judgmental expression and speaks in a deadpan British accent, 'I know what you did last night.' The cat slowly blinks with smug satisfaction. The camera slowly pushes in on the cat's face. Shallow depth of field, cinematic lighting, comedic tone."
+## HOOK TYPES TO USE (rotate these)
+- **What If**: "What if X happened?" - show impossible/fantastical scenarios
+- **Contrast**: Before/After, Problem/Solution, Expectation/Reality
+- **Emotional**: Cute animals speaking, heartwarming moments, comedic timing
+- **Numbers**: "3 things...", "In 5 seconds...", specific claims
+- **Negative hook**: "The mistake everyone makes...", "Why X is wrong..."
 
-Return ONLY valid JSON array of prompts, no other text."""
+## LTX-2 TECHNICAL RULES
+1. Write 4-8 sentences in ONE flowing paragraph
+2. Use present tense for all actions
+3. Structure: Shot type → Lighting/Atmosphere → Action → Character details → Camera movement → Audio
+4. Dialogue: Use quotes + specify accent/emotion ("speaking in excited British accent, 'Oh my god!'")
+5. Camera terms: slow dolly in, handheld tracking, push in, pull back, static close-up, orbiting shot
+6. Lighting: golden hour, rim light, soft diffused, dramatic side lighting, silhouette
+
+## MUST AVOID
+- "no text", "no subtitles" (causes text to appear!)
+- Negative prompts or descriptions of what NOT to show
+- Location names (Tokyo, NYC) - triggers text overlays
+- Internal emotions ("sad", "happy") - show through expression/posture instead
+- Complex physics (jumping, juggling)
+- Too many characters or actions
+
+## STRUCTURE FOR VIRAL (10 second video)
+- 0-2 sec: HOOK - Striking visual + immediate dialogue/action
+- 3-7 sec: DEVELOPMENT - Story unfolds, surprise/transformation
+- 8-10 sec: PAYOFF - Satisfying conclusion, emotional peak
+
+## GOOD PROMPT EXAMPLE
+"Close-up of an orange tabby cat on a modern kitchen counter, warm morning sunlight streaming through windows. The cat stares directly into camera with an intense judgmental expression and immediately speaks in a deadpan British accent, 'I know what you did last night.' The cat slowly blinks with smug satisfaction as the camera pushes in on its face. Shallow depth of field, golden rim lighting, comedic tone with dramatic pause."
+
+Return ONLY valid JSON array, no other text."""
 
 
 def generate_prompts(
@@ -48,15 +72,26 @@ def generate_prompts(
     if not GROK_API_KEY:
         raise ValueError("GROK_API_KEY not set")
 
-    user_message = f"""Generate {count} unique LTX-2 video prompts.
+    user_message = f"""Generate {count} VIRAL short-form video prompts for LTX-2.
 
 Category: {category}
 Style: {style or "cinematic"}
-Include dialogue: {"yes" if include_dialogue else "no"}
+Include dialogue: {"YES - characters must speak in the first 1-2 seconds" if include_dialogue else "no dialogue"}
+
+IMPORTANT:
+- Each prompt must use a DIFFERENT hook type (What If, Contrast, Emotional, Numbers, Negative)
+- Videos are 10 seconds - pack maximum impact
+- Focus on 0.5 second hook - what makes viewers STOP scrolling?
+- Make it shareable and comment-worthy
 
 Return as JSON array:
 [
-  {{"prompt": "full prompt text", "caption": "short social media caption", "hashtags": ["tag1", "tag2"]}}
+  {{
+    "prompt": "full LTX-2 prompt (4-8 sentences, one paragraph)",
+    "caption": "short punchy social media caption with emoji (under 100 chars)",
+    "hashtags": ["relevant", "trending", "tags"],
+    "hook_type": "what_if|contrast|emotional|numbers|negative"
+  }}
 ]"""
 
     response = requests.post(
